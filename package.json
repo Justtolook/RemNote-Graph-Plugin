@@ -1,6 +1,6 @@
 {
   "private": true,
-  "name": "remnote-plugin-template-react",
+  "name": "Graph",
   "version": "0.0.1",
   "license": "MIT",
   "scripts": {
@@ -11,8 +11,10 @@
   },
   "dependencies": {
     "@remnote/plugin-sdk": "^0.0.9",
+    "ngraph.graph": "^20.0.0",
     "react": "^17.0.2",
-    "react-dom": "^17.0.2"
+    "react-dom": "^17.0.2",
+    "vivagraphjs": "^0.12.0"
   },
   "devDependencies": {
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.7",

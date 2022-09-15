@@ -1,9 +1,9 @@
 {
   "manifestVersion": 1,
-  "id": "plugin_template",
-  "name": "Plugin Template",
-  "author": "remnote",
-  "repoUrl": "",
+  "id": "graph",
+  "name": "Graph",
+  "author": "henrik",
+  "repoUrl": "https://github.com/Justtolook/RemNote-Graph-Plugin",
   "version": {
     "major": 0,
     "minor": 0,
@@ -11,6 +11,7 @@
   },
   "description": "",
   "requestNative": false,
+  "enableOnMobile": false,
   "requiredScopes": [
     {
       "type": "All",
