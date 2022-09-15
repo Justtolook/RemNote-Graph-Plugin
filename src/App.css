@@ -1,2 +1,5 @@
 /* Add your plugin styles here. */
 
+.graph-body {
+    margin: 2rem;
+}
