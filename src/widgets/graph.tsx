@@ -1,20 +1,24 @@
 import { usePlugin, renderWidget, useTracker } from '@remnote/plugin-sdk';
 import graph from 'ngraph.graph';
+import { GraphHandler } from './graphHandler';
 
 
 //require the viva graph library
 var Viva = require('vivagraphjs');
-
+var PageRank = require('ngraph.pagerank');
+var HITS = require('ngraph.hits');
 
 var graphBody;
 var graphInfo;
 var selRemInfo;
 var layout;
 var g = Viva.Graph.graph();
-const referenceEdges = true;
+const referenceEdges = false;
+const hierarchyEdges = true;
+var graphHandler;
 
-var iterations = 200;
-  
+var iterations = 20;
+
 
 export const Graph = () => {
   const plugin = usePlugin();
@@ -22,28 +26,47 @@ export const Graph = () => {
     async (reactivePlugin) => await reactivePlugin.rem.getAll()
   );
 
+    if(allRem) {
+      //init the GraphHandler
+      graphHandler = new GraphHandler();
+      graphHandler.initFullGraph(allRem, 'all').then(() => {graphHandler.graphInfo()});
+      graphHandler.debugInfo();
+    }
+
+  
+
   
   if(allRem) {
-  allRem?.forEach((rem) => {
-    if(rem._id !== undefined) {
-      //console.log(rem._id);
-      //console.log(JSON.stringify(rem));
-      g.addNode(rem._id);
-      if(rem.children) {
-        rem.children.forEach((child) => {
-          g.addNode(child);
-          g.addLink(rem._id, child, 'child');
-        });
+    allRem?.forEach((rem) => {
+      if(rem._id !== undefined) {
+        //console.log(rem._id);
+        //console.log(JSON.stringify(rem));
+        g.addNode(rem._id);
+        if(hierarchyEdges) {
+          if(rem.children) {
+            rem.children.forEach((child) => {
+              g.addNode(child);
+              g.addLink(rem._id, child, 'child');
+            });
+          }
+          if(rem.parents) {
+            rem.parents.forEach((parent) => {
+              g.addNode(parent); 
+              g.addLink(rem._id, parent, 'parent');
+            });
+          }
+        }
+        if(referenceEdges) {
+          rem.remsBeingReferenced().then(Rrems => {
+            Rrems.forEach((Rrem) => {
+              g.addNode(Rrem._id);
+              g.addLink(rem._id, Rrem._id, 'reference');
+              //console.log("new reference edge: " + rem._id + " -> " + Rrem._id);
+            });
+          });
+        }
       }
-      if(rem.parents) {
-        rem.parents.forEach((parent) => {
-          g.addNode(parent); 
-          g.addLink(rem._id, parent, 'parent');
-        });
-      }
-      
-    }
-  });
+    });
   }
   else {
     return <div>loading all rem</div>;
@@ -56,6 +79,12 @@ export const Graph = () => {
     gravity : -1.2,
     theta : 1
   });
+
+  function removeCertainNodes() {
+    g.removeNode('cCDzpLLGJDh4KxYdM'); //alias
+    g.removeNode('BtjXfx95ctTkipKx6'); //source
+    g.removeNode('utaHb7K8utSsRt2yb'); //pdf
+  }
 
   //async function to get rem.text from plugin.rem.findOne(_id)
   async function getRemText(_id: string) {
@@ -74,6 +103,12 @@ export const Graph = () => {
     else {
       return 'undefined';
     }
+  }
+
+  async function getRemPowerUp(_id: string) {
+    const rem = await plugin.rem.findOne(_id);
+    const remPowerUp = rem?.getPowerupProperty;
+    return remPowerUp;
   }
 
   
@@ -117,8 +152,9 @@ export const Graph = () => {
 
   
   //document.body.appendChild(document.createElement('div')).id = 'graph-info';
+  removeCertainNodes();
 
-  precompute(renderGraph);
+  //precompute(renderGraph);
 
   function precompute(callback) {
     //graphInfo.innerText = 'Iterations remaining: ' + iterations;
@@ -147,9 +183,15 @@ export const Graph = () => {
 
     events.mouseEnter(function (node) {
       console.log('Mouse entered node: ' + node.id);
-      getRemText(node.id).then((text) => {selRemInfo.innerText = 'Rem ID: ' + node.id + '\n' + 'Rem Text: ' + text});
+      getRemText(node.id).then((text) => {
+        selRemInfo.innerText = 'Rem ID: ' + node.id + '\n' + 'Rem Text: ' + text});
       //selRemInfo.innerText = 'Rem ID: ' + node.id + '\n' + 'Rem Text: ' + getRemText(node.id).then();
-      });
+      // getRemPowerUp(node.id).then((powerUp) => {
+      //   if(powerUp) {
+      //     selRemInfo.innerText += '\n' + 'PowerUp: ' + powerUp;
+      //   }
+      // });
+    });
     events.mouseLeave(function (node) {
       console.log('Mouse left node: ' + node.id);
       selRemInfo.innerText = 'Rem ID: ...\n' + 'Rem Text: ...';
@@ -192,9 +234,38 @@ export const Graph = () => {
       iterations = nIterations;
       precompute(renderGraph);
     }
+    //update the nLinks element
+    console.log('nLinks: ' + g.getLinksCount());
+    document.getElementById('nLinks').innerText = 'Number of links: : ' + g.getLinksCount();
   }
 
+  //calcPageRank();
 
+  function calcPageRank() {
+    var rank = PageRank(g);
+    //output the first 20 ranks
+    var i = 0;
+    for (var nodeId in rank) {
+      if (i < 20) {
+        console.log('Node ' + nodeId + ' has rank: ' + rank[nodeId]);
+        i++;
+      }
+    }
+    
+    //sort ranks in descending order
+    var sortedRanks = Object.keys(rank).sort(function(a,b){return rank[b]-rank[a]});
+
+
+    //output the first 20 ranks
+    var i = 0;
+    console.log('highest 20 ranks:');
+    for (var nodeId in sortedRanks) {
+      if (i < 20) {
+        console.log('Node ' + sortedRanks[nodeId] + ' has rank: ' + rank[sortedRanks[nodeId]]);
+        i++;
+      }
+    }
+  }
 
 
 
@@ -204,8 +275,8 @@ export const Graph = () => {
   return (
     <div class="graph-body" id="graph-body">
       <h1>Graph</h1>
-      <p>Number of nodes: {g.getNodesCount()}</p>
-      <p>Number of links: {g.getLinksCount()}</p>
+      <p>Number of nodes: {graphHandler.graph.getNodesCount()}</p>
+      <p id="nLinks">Number of links: {graphHandler.graph.getLinksCount()}</p>
       <button class="btn" onClick={() => addIterations(20)}>Add iterations</button>
     </div>
   );
