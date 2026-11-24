@@ -1,8 +1,10 @@
 import { declareIndexPlugin, type ReactRNPlugin, WidgetLocation } from '@remnote/plugin-sdk';
 
 async function onActivate(plugin: ReactRNPlugin) {
+  // Height only accepts pixels, so size it from the screen; width accepts CSS units.
+  const screenHeight = window.screen?.availHeight || 900;
   await plugin.app.registerWidget('graph', WidgetLocation.Popup, {
-    dimensions: { height: 760, width: '90%' },
+    dimensions: { height: Math.max(560, Math.round(screenHeight * 0.8)), width: '92vw' },
   });
 
   await plugin.app.registerWidget('local_graph', WidgetLocation.RightSidebar, {
