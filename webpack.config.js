@@ -1,9 +1,9 @@
 const { resolve } = require('path');
-var glob = require('glob');
+const { globSync } = require('glob');
 var path = require('path');
 
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const { ESBuildMinifyPlugin } = require('esbuild-loader');
+const { EsbuildPlugin } = require('esbuild-loader');
 const { ProvidePlugin, BannerPlugin } = require('webpack');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const ReactRefreshWebpackPlugin = require('@pmmmwh/react-refresh-webpack-plugin');
@@ -19,14 +19,14 @@ const SANDBOX_SUFFIX = '-sandbox';
 
 const config = {
   mode: isProd ? 'production' : 'development',
-  entry: glob.sync('./src/widgets/**/*.tsx').reduce((obj, el) => {
+  entry: globSync('./src/widgets/**/*.tsx').reduce((obj, el) => {
     const rel = path
       .relative('src/widgets', el)
       .replace(/\.[tj]sx?$/, '')
       .replace(/\\/g, '/');
 
-    obj[rel] = el;
-    obj[`${rel}${SANDBOX_SUFFIX}`] = el;
+    obj[rel] = resolve(__dirname, el);
+    obj[`${rel}${SANDBOX_SUFFIX}`] = resolve(__dirname, el);
     return obj;
   }, {}),
 
@@ -106,7 +106,7 @@ const config = {
 if (isProd) {
   config.optimization = {
     minimize: isProd,
-    minimizer: [new ESBuildMinifyPlugin()],
+    minimizer: [new EsbuildPlugin({ target: 'es2020' })],
   };
 } else {
   // for more information, see https://webpack.js.org/configuration/dev-server
