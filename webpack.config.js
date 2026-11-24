@@ -1,9 +1,9 @@
 const { resolve } = require('path');
-var glob = require('glob');
+const { globSync } = require('glob');
 var path = require('path');
 
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const { ESBuildMinifyPlugin } = require('esbuild-loader');
+const { EsbuildPlugin } = require('esbuild-loader');
 const { ProvidePlugin, BannerPlugin } = require('webpack');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const ReactRefreshWebpackPlugin = require('@pmmmwh/react-refresh-webpack-plugin');
@@ -19,9 +19,14 @@ const SANDBOX_SUFFIX = '-sandbox';
 
 const config = {
   mode: isProd ? 'production' : 'development',
-  entry: glob.sync('./src/widgets/**.tsx').reduce(function (obj, el) {
-    obj[path.parse(el).name] = el;
-    obj[path.parse(el).name + SANDBOX_SUFFIX] = el;
+  entry: globSync('./src/widgets/**/*.tsx').reduce((obj, el) => {
+    const rel = path
+      .relative('src/widgets', el)
+      .replace(/\.[tj]sx?$/, '')
+      .replace(/\\/g, '/');
+
+    obj[rel] = resolve(__dirname, el);
+    obj[`${rel}${SANDBOX_SUFFIX}`] = resolve(__dirname, el);
     return obj;
   }, {}),
 
@@ -47,7 +52,7 @@ const config = {
       {
         test: /\.css$/i,
         use: [
-          MiniCssExtractPlugin.loader,
+          isDevelopment ? 'style-loader' : MiniCssExtractPlugin.loader,
           { loader: 'css-loader', options: { url: false } },
           'postcss-loader',
         ],
@@ -55,9 +60,11 @@ const config = {
     ],
   },
   plugins: [
-    new MiniCssExtractPlugin({
-      filename: 'App.css',
-    }),
+    isDevelopment
+      ? undefined
+      : new MiniCssExtractPlugin({
+          filename: '[name].css',
+        }),
     new HtmlWebpackPlugin({
       templateContent: `
       <body></body>
@@ -87,7 +94,10 @@ const config = {
       raw: true,
     }),
     new CopyPlugin({
-      patterns: [{ from: 'public', to: '' }],
+      patterns: [
+        { from: 'public', to: '' },
+        { from: 'README.md', to: '' },
+      ],
     }),
     fastRefresh,
   ].filter(Boolean),
@@ -96,7 +106,7 @@ const config = {
 if (isProd) {
   config.optimization = {
     minimize: isProd,
-    minimizer: [new ESBuildMinifyPlugin()],
+    minimizer: [new EsbuildPlugin({ target: 'es2020' })],
   };
 } else {
   // for more information, see https://webpack.js.org/configuration/dev-server
@@ -108,6 +118,7 @@ if (isProd) {
     watchFiles: ['src/*'],
     headers: {
       'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'baggage, sentry-trace',
     },
   };
 }

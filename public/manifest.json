@@ -1,21 +1,23 @@
 {
   "manifestVersion": 1,
-  "id": "graph",
-  "name": "Graph",
-  "author": "henrik",
+  "id": "graph-view",
+  "name": "Graph View",
+  "author": "Justtolook",
   "repoUrl": "https://github.com/Justtolook/RemNote-Graph-Plugin",
+  "supportUrl": "https://github.com/Justtolook/RemNote-Graph-Plugin/issues",
   "version": {
-    "major": 0,
+    "major": 1,
     "minor": 0,
-    "patch": 1
+    "patch": 0
   },
-  "description": "",
-  "requestNative": false,
+  "description": "Explore your knowledge base as an interactive graph: documents, hierarchy and references, a local graph in the sidebar, search and clusters.",
+  "theme": [],
   "enableOnMobile": false,
+  "requestNative": false,
   "requiredScopes": [
     {
       "type": "All",
-      "level": "ReadCreateModify"
+      "level": "Read"
     }
   ]
 }
